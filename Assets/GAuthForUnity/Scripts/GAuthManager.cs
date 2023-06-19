@@ -73,11 +73,22 @@ namespace GAuthForUnity
         }
 
         /// <summary>
+        /// 서버에서 코드를 발급받습니다.
+        /// </summary>
+        /// <param name="email">GAuth 계정 이메일</param>
+        /// <param name="password">GAuth 계정 비밀번호</param>
+        /// <param name="callback">성공 콜백 함수</param>
+        public void GetCode(string email, string password, Action<GAuthCode> callback)
+        {
+            StartCoroutine(GetCodeCoroutine(email, password, callback));
+        }
+
+        /// <summary>
         /// 서버에서 유저 정보를 받아옵니다.
         /// </summary>
         /// <param name="email">GAuth 계정 이메일</param>
         /// <param name="password">GAuth 계정 비밀번호</param>
-        /// <param name="callback">콜백 함수</param>
+        /// <param name="callback">성공 콜백 함수</param>
         public void GetUserInfo(string email, string password, Action<GAuthUserInfo> callback)
         {
             StartCoroutine(GetUserInfoCoroutine(email, password, callback));
@@ -85,6 +96,21 @@ namespace GAuthForUnity
         #endregion
 
         #region Private
+        private IEnumerator GetCodeCoroutine(string email, string password, Action<GAuthCode> callback)
+        {
+            var task = _gAuth.GenerateCodeAsync(email, password);
+            while (!task.IsCompleted)
+                yield return null;
+
+            if (task.IsFaulted || task.IsCanceled)
+            {
+                HandleError("GenerateCodeAsync Failed");
+                yield break;
+            }
+
+            callback.Invoke(task.Result);
+        }
+
         private IEnumerator GetUserInfoCoroutine(string email, string password, Action<GAuthUserInfo> callback)
         {
             var task1 = _gAuth.GenerateTokenAsync(email, password, _clientId, _clientSecret, _redirectUri);
